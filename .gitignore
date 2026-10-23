@@ -1,0 +1,23 @@
+# Configurações locais do Android
+local.properties
+**/local.properties
+
+# Arquivos de compilação
+**/build/
+**/.gradle/
+
+# Chaves e configurações de assinatura
+*.jks
+*.keystore
+keystore.properties
+**/keystore.properties
+*.pem
+*.p12
+
+# Backups locais
+*.backup
+*.save
+
+# Configurações de ambiente
+.env
+.env.*

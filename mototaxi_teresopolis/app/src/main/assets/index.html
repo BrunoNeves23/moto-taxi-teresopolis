@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<meta name="theme-color" content="#101820">
+<title>MotoTáxi Teresópolis</title>
+<style>
+:root{--bg:#101820;--panel:#182631;--gold:#f5b82e;--text:#f4f7fa;--muted:#a9bac6;--line:#2a3b47}
+*{box-sizing:border-box}body{margin:0;background:linear-gradient(160deg,#101820,#172a36);font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;color:var(--text)}
+header{padding:25px 20px 18px;background:#0c1319;border-bottom:1px solid var(--line)}.brand{font-size:12px;letter-spacing:2px;color:var(--gold);font-weight:800}.title{font-size:27px;font-weight:850;margin:7px 0 4px}.sub{color:var(--muted);font-size:14px}
+main{max-width:600px;margin:auto;padding:18px 16px 40px}.cards{display:grid;grid-template-columns:1fr 1fr;gap:12px}.choice{background:var(--panel);border:1px solid var(--line);border-radius:17px;padding:18px 14px;text-align:left;color:var(--text);font-size:16px;font-weight:800;min-height:110px}.choice span{display:block;font-size:28px;margin-bottom:9px}.choice.active{border:2px solid var(--gold);background:#22313b}
+.panel{margin-top:16px;background:var(--panel);border:1px solid var(--line);border-radius:17px;padding:17px}.panel h2{font-size:18px;margin:0 0 14px}label{display:block;font-size:13px;color:var(--muted);margin:13px 0 6px}input,textarea{width:100%;background:#0e1820;border:1px solid #354957;border-radius:10px;padding:13px;color:var(--text);font-size:15px;outline:none}input:focus,textarea:focus{border-color:var(--gold)}textarea{min-height:75px;resize:vertical}.hint{font-size:12px;color:var(--muted);line-height:1.45;margin-top:8px}.btn{width:100%;border:0;border-radius:12px;padding:14px 16px;font-size:15px;font-weight:850;cursor:pointer;margin-top:14px}.primary{background:var(--gold);color:#141b20}.secondary{background:#253845;color:var(--text);border:1px solid #3b5261}.price{font-size:30px;font-weight:900;color:var(--gold);margin:5px 0}.row{display:flex;justify-content:space-between;gap:12px;color:var(--muted);font-size:14px}.status{font-size:13px;color:var(--muted);margin-top:9px;min-height:18px}.hidden{display:none!important}.pill{display:inline-block;border:1px solid #3b5261;border-radius:99px;padding:5px 9px;font-size:11px;color:var(--muted);margin-top:8px}.footer{text-align:center;color:#8da0ad;font-size:11px;margin:20px 0}
+</style></head>
+<body>
+<header><div class="brand">SERVIÇO PARTICULAR</div><div class="title">MotoTáxi <span style="color:var(--gold)">&</span> Entregas</div><div class="sub">Teresópolis, RJ · Rápido, simples e direto</div></header>
+<main>
+<div class="cards">
+<button class="choice active" id="rideChoice" onclick="setType('Corrida')"><span>🏍️</span>Moto-táxi<small class="pill">Transporte de passageiro</small></button>
+<button class="choice" id="deliveryChoice" onclick="setType('Entrega')"><span>📦</span>Entregas<small class="pill">Buscar ou levar produto</small></button>
+</div>
+<section class="panel">
+<h2 id="formTitle">Solicitar uma corrida</h2>
+<label for="customer">Seu nome</label><input id="customer" autocomplete="name" placeholder="Como podemos te chamar?">
+<label for="phone">Seu telefone (opcional)</label><input id="phone" type="tel" placeholder="(21) 99999-9999">
+<label for="origin">Local de saída / retirada</label><input id="origin" placeholder="Rua, número, bairro, Teresópolis">
+<label for="destination">Destino / endereço de entrega</label><input id="destination" placeholder="Rua, número, bairro, Teresópolis">
+<div id="productWrap" class="hidden"><label for="product">Qual produto será buscado/entregue?</label><input id="product" placeholder="Ex.: documento, remédio, compra..."><label for="store">Nome da loja (opcional)</label><input id="store" placeholder="Loja ou estabelecimento"></div>
+<label for="notes">Observações (opcional)</label><textarea id="notes" placeholder="Referência do endereço ou detalhes do pedido"></textarea>
+<button class="btn primary" onclick="calculate()">CALCULAR ORÇAMENTO</button>
+<div class="status" id="routeStatus" role="status"></div>
+<div id="quote" class="hidden">
+<div style="border-top:1px solid var(--line);margin:16px 0"></div>
+<div class="row"><span>Distância estimada pela rota</span><strong id="distance">—</strong></div>
+<div class="row" style="margin-top:8px"><span>Tarifa aplicada</span><strong>R$ 2,00/km · mínimo R$ 8,00</strong></div>
+<div class="price" id="price">R$ 8,00</div>
+<div class="hint">Estimativa inicial. O valor pode ser confirmado antes do atendimento, especialmente se houver desvios, espera, pedágios ou condições especiais.</div>
+<button class="btn primary" onclick="sendWhatsApp()">ENVIAR PEDIDO PELO WHATSAPP</button>
+<button class="btn secondary" onclick="openRoute()">VER ROTA NO MAPS</button>
+</div>
+</section>
+<div class="footer">Orçamento estimado · Atendimento em Teresópolis e região próxima</div>
+</main>
+<script>
+const WHATSAPP_NUMBER = "5521974295877"; // Substitua pelo número do WhatsApp com DDI e DDD, somente números.
+const RATE_PER_KM = 2.00, MIN_FARE = 8.00;
+let type = "Corrida", quoteData = null;
+function setType(next){
+ type=next;
+ document.getElementById('rideChoice').classList.toggle('active',type==='Corrida');
+ document.getElementById('deliveryChoice').classList.toggle('active',type==='Entrega');
+ document.getElementById('formTitle').textContent=type==='Corrida'?'Solicitar uma corrida':'Solicitar uma entrega';
+ document.getElementById('productWrap').classList.toggle('hidden',type!=='Entrega');
+ document.getElementById('quote').classList.add('hidden'); quoteData=null;
+}
+function money(n){return n.toLocaleString('pt-BR',{style:'currency',currency:'BRL'});}
+async function geocode(address){
+ const params = new URLSearchParams({
+  format: 'jsonv2',
+  limit: '5',
+  q: address + ', Teresópolis, RJ, Brasil',
+  countrycodes: 'br',
+  addressdetails: '1',
+  'accept-language': 'pt-BR',
+  viewbox: '-43.3,-22.0,-42.4,-22.8',
+  bounded: '0'
+ });
+ const res = await fetch('https://' + 'nominatim.openstreetmap.org/search?' + params.toString());
+ if(!res.ok) throw new Error('O serviço de busca de endereços está indisponível. Tente novamente.');
+ const data = await res.json();
+ if(!data.length) throw new Error('Endereço não encontrado. Tente informar o nome da rua, número e bairro, ou o nome de um local conhecido.');
+ const result = data[0];
+ return {
+  lat: Number(result.lat),
+  lon: Number(result.lon),
+  label: result.display_name
+ };
+}
+async function calculate(){
+ const origin=document.getElementById('origin').value.trim(), dest=document.getElementById('destination').value.trim();
+ const status=document.getElementById('routeStatus'), btn=document.querySelector('.primary');
+ if(!origin||!dest){status.textContent='Preencha o local de saída e o destino.';return;}
+ status.textContent='Consultando endereços e calculando a rota…'; document.getElementById('quote').classList.add('hidden');
+ try{
+  const a = await geocode(origin);
+  await new Promise(resolve => setTimeout(resolve, 1100));
+  const b = await geocode(dest);
+  const r=await fetch('https://' + 'router.project-osrm.org/route/v1/driving/' + a.lon + ',' + a.lat + ';' + b.lon + ',' + b.lat + '?overview=false');
+  if(!r.ok) throw new Error('Serviço de rotas indisponível neste momento.');
+  const route=await r.json(); if(route.code!=='Ok'||!route.routes?.length) throw new Error('Não encontrei uma rota de carro/moto para estes endereços.');
+  const km=route.routes[0].distance/1000, total=Math.max(MIN_FARE,Math.ceil(km*RATE_PER_KM*100)/100);
+  quoteData={km,total,origin,dest,a,b};
+  document.getElementById('distance').textContent=km.toLocaleString('pt-BR',{maximumFractionDigits:2})+' km';
+  document.getElementById('price').textContent=money(total);
+  document.getElementById('quote').classList.remove('hidden'); status.textContent='Orçamento calculado. Confira os dados antes de enviar.';
+ }catch(e){status.textContent=(e.message||'Erro ao calcular a rota')+' Você também pode informar os endereços novamente ou tentar mais tarde.';}
+}
+function sendWhatsApp(){
+ if(!quoteData)return;
+ const val=id=>document.getElementById(id).value.trim();
+ const lines=['*NOVO PEDIDO — MOTO-TÁXI & ENTREGAS*','Serviço: '+type,'Cliente: '+(val('customer')||'Não informado'),'Telefone: '+(val('phone')||'Não informado'),'Saída/retirada: '+quoteData.origin,'Destino: '+quoteData.dest,'Distância estimada: '+quoteData.km.toLocaleString('pt-BR',{maximumFractionDigits:2})+' km','*Orçamento estimado: '+money(quoteData.total)+'*'];
+ if(type==='Entrega'){lines.push('Produto: '+(val('product')||'Não informado'));if(val('store'))lines.push('Loja: '+val('store'));}
+ if(val('notes'))lines.push('Observações: '+val('notes'));
+ lines.push('Solicito confirmação do atendimento e do valor final.');
+ location.href='https://' + 'wa.me/' + WHATSAPP_NUMBER + '?text=' + encodeURIComponent(lines.join('\n'));
+}
+function openRoute(){if(!quoteData)return;location.href='https://' + 'www.google.com/maps/dir/?api=1&origin=' + encodeURIComponent(quoteData.origin+', Teresópolis, RJ')+'&destination='+encodeURIComponent(quoteData.dest+', Teresópolis, RJ')+'&travelmode=driving';}
+</script>
+</body></html>
